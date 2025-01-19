@@ -53,18 +53,18 @@ void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
   // This extension isn't supported by MoltenVK and
   // idk how to remove it but this works
   // VK_KHR_portability_enumeration
-  /* int count_extensions = count_instance_extensions + 1; */
-  int count_extensions = count_instance_extensions;
+  int count_extensions = count_instance_extensions + 1;
+  /* int count_extensions = count_instance_extensions; */
   const char **extensions = (const char **)SDL_malloc(count_extensions * sizeof(const char *));
   extensions[0] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
   SDL_memcpy(&extensions[1], instance_extensions, count_instance_extensions * sizeof(const char*));
   std::cout << "malloc extensions" << std::endl;
-  std::cout << *extensions << std::endl;
-  std::cout << *(extensions+1) << std::endl;
-  std::cout << *(extensions+2) << std::endl;
-  std::cout << *(extensions+3) << std::endl;
-  /* // std::cout << *(extensions+4) << std::endl; */
   std::cout << count_extensions << std::endl;
+  /* std::cout << *extensions << std::endl; */
+  /* std::cout << *(extensions+1) << std::endl; */
+  /* std::cout << *(extensions+2) << std::endl; */
+  /* std::cout << *(extensions+3) << std::endl; */
+  /* // std::cout << *(extensions+4) << std::endl; */
 
   /* VkApplicationInfo appInfo{}; */
   VkApplicationInfo appInfo{};
@@ -135,7 +135,7 @@ void LveWindow::update() {
   /* destR.h = 32; */
   /* destR.w = 32; */
   /* destR.x = cnt; */
-  std::cout << "cnt: " << cnt << std::endl;
+  /* std::cout << "cnt: " << cnt << std::endl; */
 };
 
 void LveWindow::render() {
