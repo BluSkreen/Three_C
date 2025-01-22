@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-class LvePipeline {
+class VhcPipeline {
   public:
-  LvePipeline(const std::string& vertFilepath, const std::string& fragFilepath);
+  VhcPipeline(const std::string& vertFilepath, const std::string& fragFilepath);
 
   private:
   static std::vector<char> readFile(const std::string& filepath);

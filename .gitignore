@@ -17,6 +17,7 @@ CMakeUserPresets.json
 .DS_Store
 
 HelloSDL
+Vulkan_Hand_Crank
 /dependencies/*
 !/dependencies/.keep
 

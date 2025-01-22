@@ -1,13 +1,23 @@
-#include "lve_window.h"
+#include "vhc_window.hpp"
+#include <algorithm>
+#include <iterator>
 
 /* SDL_Texture *playerTexture; */
 /* SDL_FRect srcR, destR; */
 
-LveWindow::LveWindow() {}
-LveWindow::~LveWindow() {}
+namespace vhc {
 
-void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
-                int windowHeight, bool fullscreen) {
+VhcWindow::VhcWindow(const char *title, int width, int height, int xpos, int ypos, bool fullscreen)
+    : title{title}, width{width}, height{height} {
+  initWindow(xpos, ypos, fullscreen);
+}
+VhcWindow::~VhcWindow() {
+  SDL_DestroyWindow(window);
+  SDL_Quit();
+  std::cout << "Game Cleaned" << std::endl;
+}
+
+void VhcWindow::initWindow(int xpos, int ypos, bool fullscreen) {
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("SDL_Init failed (%s)", SDL_GetError());
     isRunning = false;
@@ -20,7 +30,8 @@ void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
     sdlWindowFlags = sdlWindowFlags | SDL_WINDOW_FULLSCREEN;
   }
 
-  window = SDL_CreateWindow("Hello SDL Vulkan", windowWidth, windowHeight, sdlWindowFlags);
+  window = SDL_CreateWindow(title, width, height,
+                            sdlWindowFlags);
   if (!window) {
     SDL_Log("SDL_CreateWindow failed (%s)", SDL_GetError());
     isRunning = false;
@@ -28,19 +39,11 @@ void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
   }
   std::cout << "window created!" << std::endl;
 
-  /* renderer = SDL_CreateRenderer(window, "vkrenderer"); */
-  /* if (!renderer) { */
-  /*   SDL_Log("SDL_CreateRenderer failed (%s)", SDL_GetError()); */
-  /*   isRunning = false; */
-  /*   return; */
-  /* } */
-  /* std::cout << "renderer created!" << std::endl; */
-
   //*************
-  // in some init function...
-
+  // Vulkan
   Uint32 count_instance_extensions;
-  const char * const *instance_extensions = SDL_Vulkan_GetInstanceExtensions(&count_instance_extensions);
+  const char *const *instance_extensions =
+      SDL_Vulkan_GetInstanceExtensions(&count_instance_extensions);
 
   if (instance_extensions == NULL) {
     SDL_Log("SDL_Vulkan_GetInstanceExtensions failed (%s)", SDL_GetError());
@@ -48,22 +51,50 @@ void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
     return;
   }
   std::cout << "created instance extensions" << std::endl;
-  /* std::cout << instance_extensions << std::endl; */
-  /* std::cout << count_instance_extensions << std::endl; */
+
+  int count_extensions = count_instance_extensions + 1;
   // This extension isn't supported by MoltenVK and
   // idk how to remove it but this works
   // VK_KHR_portability_enumeration
-  int count_extensions = count_instance_extensions + 1;
+  // UPDATE: Below now filters the extension from the array of pointers/strings
   /* int count_extensions = count_instance_extensions; */
-  const char **extensions = (const char **)SDL_malloc(count_extensions * sizeof(const char *));
+
+  /* MACOS FILTER FOR MOLTENVK */
+  std::vector<const char *> vec_filtered_extensions;
+  std::copy_if(instance_extensions,
+               instance_extensions + count_instance_extensions,
+               std::back_inserter(vec_filtered_extensions),
+               [&count_extensions](const char *str) {
+                 if (strcmp(str, "VK_KHR_portability_enumeration") != 0) {
+                   return true;
+                 } else {
+                   count_extensions--;
+                   return false;
+                 }
+               });
+  // Create an array of pointers to const char
+  const char **filtered_extensions =
+      new const char *[vec_filtered_extensions.size() + 1];
+  // Copy pointers from the vector to the array
+  for (size_t i = 0; i < vec_filtered_extensions.size(); ++i) {
+    filtered_extensions[i] = vec_filtered_extensions[i];
+  }
+  // Add a null terminator
+  filtered_extensions[vec_filtered_extensions.size()] = nullptr;
+  /* END OF FILTER FOR MOLTENVK */
+
+  const char **extensions =
+      (const char **)SDL_malloc(count_extensions * sizeof(const char *));
   extensions[0] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
-  SDL_memcpy(&extensions[1], instance_extensions, count_instance_extensions * sizeof(const char*));
+  SDL_memcpy(&extensions[1], filtered_extensions,
+             count_instance_extensions * sizeof(const char *));
+
   std::cout << "malloc extensions" << std::endl;
   std::cout << count_extensions << std::endl;
-  /* std::cout << *extensions << std::endl; */
-  /* std::cout << *(extensions+1) << std::endl; */
-  /* std::cout << *(extensions+2) << std::endl; */
-  /* std::cout << *(extensions+3) << std::endl; */
+  std::cout << *extensions << std::endl;
+  std::cout << *(extensions + 1) << std::endl;
+  std::cout << *(extensions + 2) << std::endl;
+  /* std::cout << *(extensions + 3) << std::endl; */
   /* // std::cout << *(extensions+4) << std::endl; */
 
   /* VkApplicationInfo appInfo{}; */
@@ -71,9 +102,9 @@ void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   appInfo.pNext = NULL;
   appInfo.pApplicationName = "Hello Vulkan App";
-  appInfo.applicationVersion = VK_MAKE_VERSION(1,0,0);
+  appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.pEngineName = "helloVK",
-  appInfo.engineVersion = VK_MAKE_VERSION(1,0,0),
+  appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0),
   appInfo.apiVersion = VK_API_VERSION_1_0;
 
   std::vector<const char *> layerNames{};
@@ -122,7 +153,7 @@ void LveWindow::init(const char *titile, int xpos, int ypos, int windowWidth,
   /* SDL_DestroySurface(tmpSurface); */
 };
 
-void LveWindow::handleEvents() {
+void VhcWindow::handleEvents() {
   SDL_Event event;
   SDL_PollEvent(&event);
   if (event.type == SDL_EVENT_QUIT) {
@@ -130,24 +161,26 @@ void LveWindow::handleEvents() {
   }
 };
 
-void LveWindow::update() {
-  /* cnt++; */
-  /* destR.h = 32; */
-  /* destR.w = 32; */
-  /* destR.x = cnt; */
-  /* std::cout << "cnt: " << cnt << std::endl; */
-};
+/* void VhcWindow::update() { */
+/*   /1* cnt++; *1/ */
+/*   /1* destR.h = 32; *1/ */
+/*   /1* destR.w = 32; *1/ */
+/*   /1* destR.x = cnt; *1/ */
+/*   /1* std::cout << "cnt: " << cnt << std::endl; *1/ */
+/* }; */
 
-void LveWindow::render() {
-  /* SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE); */
-  /* SDL_RenderClear(renderer); */
-  /* SDL_RenderTexture(renderer, playerTexture, NULL, &destR); */
-  /* SDL_RenderPresent(renderer); */
-};
+/* void VhcWindow::render() { */
+/*   /1* SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE); *1/ */
+/*   /1* SDL_RenderClear(renderer); *1/ */
+/*   /1* SDL_RenderTexture(renderer, playerTexture, NULL, &destR); *1/ */
+/*   /1* SDL_RenderPresent(renderer); *1/ */
+/* }; */
 
-void LveWindow::clean() {
-  /* SDL_DestroyRenderer(renderer); */
-  SDL_DestroyWindow(window);
-  SDL_Quit();
-  std::cout << "Game Cleaned" << std::endl;
-};
+/* void VhcWindow::clean() { */
+/*   /1* SDL_DestroyRenderer(renderer); *1/ */
+/*   /1* SDL_DestroyWindow(window); *1/ */
+/*   /1* SDL_Quit(); *1/ */
+/*   /1* std::cout << "Game Cleaned" << std::endl; *1/ */
+/* }; */
+
+}

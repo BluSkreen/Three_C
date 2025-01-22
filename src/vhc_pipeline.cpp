@@ -1,14 +1,14 @@
-#include "lve_pipeline.h"
+#include "vhc_pipeline.hpp"
 
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 
-LvePipeline::LvePipeline(const std::string& vertFilepath, const std::string& fragFilepath) {
+VhcPipeline::VhcPipeline(const std::string& vertFilepath, const std::string& fragFilepath) {
   createGraphicsPipeline(vertFilepath, fragFilepath);
 }
 
-std::vector<char> LvePipeline::readFile(const std::string &filepath) {
+std::vector<char> VhcPipeline::readFile(const std::string &filepath) {
   std::ifstream file{filepath, std::ios::ate | std::ios::binary};
 
   if (!file.is_open()) {
@@ -28,7 +28,7 @@ std::vector<char> LvePipeline::readFile(const std::string &filepath) {
   return buffer;
 }
 
-void LvePipeline::createGraphicsPipeline(const std::string &vertFilepath,
+void VhcPipeline::createGraphicsPipeline(const std::string &vertFilepath,
                             const std::string &fragFilepath) {
   auto vertCode = readFile(vertFilepath);
   auto fragCode = readFile(fragFilepath);
